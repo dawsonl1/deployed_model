@@ -1,35 +1,45 @@
-"""Run inference: score all orders with the champion model, write predictions to Supabase."""
+"""Run inference: score only unfulfilled orders (no ground truth available)."""
 from datetime import datetime, timezone
 
 import pandas as pd
 
 from config import NUMERIC_FEATURES, CATEGORICAL_FEATURES, MODEL_VERSION
-from db import get_client, upsert_rows
-from etl import extract_tables, build_feature_table
+from db import upsert_rows
+from etl import build_feature_table
 
 
-def run_inference(model, model_name: str):
-    """Score all orders and write fraud predictions to Supabase."""
-    print("Inference: Building feature table for all orders...")
-    tables = extract_tables()
-    df = build_feature_table(tables)
+def run_inference(model, model_name: str, tables: dict[str, pd.DataFrame]):
+    """Score unfulfilled orders and write fraud predictions to Supabase."""
+    all_orders = tables["orders"]
+    unfulfilled = all_orders[all_orders["fulfilled"] == False].copy()
+
+    if unfulfilled.empty:
+        print("Inference: No unfulfilled orders to score.")
+        return 0
+
+    print(f"Inference: {len(unfulfilled)} unfulfilled orders to score...")
+    df = build_feature_table(unfulfilled, tables)
+
+    if df.empty:
+        print("Inference: No features built (orders may lack line items).")
+        return 0
 
     feature_cols = NUMERIC_FEATURES + CATEGORICAL_FEATURES
     available = [c for c in feature_cols if c in df.columns]
     X = df[available].copy()
 
-    print(f"Inference: Scoring {len(X)} orders with {model_name}...")
+    print(f"Inference: Scoring with {model_name}...")
     probs = model.predict_proba(X)[:, 1]
     preds = model.predict(X)
 
     now_str = datetime.now(timezone.utc).isoformat()
 
     rows = []
-    for i, row in df.iterrows():
+    for idx, (_, row) in enumerate(df.iterrows()):
         rows.append({
             "order_id": int(row["order_id"]),
-            "fraud_probability": round(float(probs[i if isinstance(i, int) else 0]), 6),
-            "predicted_fraud": bool(preds[i if isinstance(i, int) else 0]),
+            "fraud_probability": round(float(probs[idx]), 6),
+            "predicted_fraud": bool(preds[idx]),
             "model_name": model_name,
             "model_version": MODEL_VERSION,
             "prediction_timestamp": now_str,

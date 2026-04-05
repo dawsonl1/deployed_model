@@ -58,6 +58,8 @@ async function submitOrder(formData: FormData) {
       order_total: parseFloat(total.toFixed(2)),
       risk_score: 0,
       is_fraud: false,
+      is_fraud_known: false,
+      fulfilled: false,
     })
     .select("order_id")
     .single();

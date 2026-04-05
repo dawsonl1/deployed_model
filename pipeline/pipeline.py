@@ -13,16 +13,16 @@ def main():
     print(f"=== ML Pipeline Start: {start.isoformat()} ===\n")
 
     try:
-        # Step 1: ETL
-        df = run_etl()
+        # Step 1: ETL — extract all tables, build training features from fulfilled orders
+        df, tables = run_etl()
         print()
 
-        # Step 2: Train all models, pick champion
+        # Step 2: Train all models on fulfilled orders, pick champion
         best_model, best_name, best_metrics = train_all(df)
         print()
 
-        # Step 3: Inference with champion
-        n_scored = run_inference(best_model, best_name)
+        # Step 3: Inference — score only unfulfilled orders with champion
+        n_scored = run_inference(best_model, best_name, tables)
         print()
 
         end = datetime.now(timezone.utc)

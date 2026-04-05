@@ -5,8 +5,8 @@ import ScoringTrigger from "./ScoringTrigger";
 export default async function PriorityQueuePage() {
   const supabase = await createClient();
 
-  // Get all scored orders
-  const { data: predictions } = await supabase
+  // Get unfulfilled orders that HAVE predictions (scored)
+  const { data: scoredOrders } = await supabase
     .from("order_predictions_fraud")
     .select(`
       order_id,
@@ -19,20 +19,20 @@ export default async function PriorityQueuePage() {
         order_total,
         payment_method,
         device_type,
+        fulfilled,
         customer_id,
         customers!inner (
           full_name
         )
       )
     `)
-    .order("fraud_probability", { ascending: false })
-    .limit(100);
+    .order("fraud_probability", { ascending: false });
 
-  // Get scored order IDs
-  const scoredIds = new Set(predictions?.map((p: any) => p.order_id) ?? []);
+  // Filter to only unfulfilled
+  const predictions = scoredOrders?.filter((p: any) => p.orders?.fulfilled === false) ?? [];
 
-  // Get ALL order IDs to find unscored ones
-  const { data: allOrders } = await supabase
+  // Get unfulfilled orders WITHOUT predictions (unscored)
+  const { data: allUnfulfilled } = await supabase
     .from("orders")
     .select(`
       order_id,
@@ -45,34 +45,35 @@ export default async function PriorityQueuePage() {
         full_name
       )
     `)
+    .eq("fulfilled", false)
     .order("order_datetime", { ascending: false });
 
-  const unscoredOrders = allOrders?.filter((o: any) => !scoredIds.has(o.order_id)) ?? [];
+  const scoredIds = new Set(predictions.map((p: any) => p.order_id));
+  const unscoredOrders = allUnfulfilled?.filter((o: any) => !scoredIds.has(o.order_id)) ?? [];
 
   // Stats
-  const highRisk = predictions?.filter((p: any) => parseFloat(p.fraud_probability) > 0.5).length ?? 0;
-  const medRisk = predictions?.filter((p: any) => {
+  const highRisk = predictions.filter((p: any) => parseFloat(p.fraud_probability) > 0.5).length;
+  const medRisk = predictions.filter((p: any) => {
     const prob = parseFloat(p.fraud_probability);
     return prob > 0.3 && prob <= 0.5;
-  }).length ?? 0;
-  const totalScored = predictions?.length ?? 0;
+  }).length;
 
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Fraud Risk Priority Queue</h1>
         <p className="page-desc">
-          Orders ranked by predicted fraud probability. Unscored orders appear at the top
-          and need scoring before they can be reviewed.
+          Unfulfilled orders only. Ranked by predicted fraud probability so high-risk
+          orders can be reviewed before fulfillment.
         </p>
       </div>
 
-      {/* Scoring trigger banner */}
+      {/* Scoring trigger */}
       <div className="mb-5">
         <ScoringTrigger unscoredCount={unscoredOrders.length} />
       </div>
 
-      {/* Stats row */}
+      {/* Stats */}
       <div className="flex gap-3 mb-5">
         <div className="card p-3 flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{ background: "var(--warning)" }} />
@@ -99,7 +100,7 @@ export default async function PriorityQueuePage() {
           <div className="w-2 h-2 rounded-full" style={{ background: "var(--success)" }} />
           <div>
             <p className="metric-label">Scored</p>
-            <p className="text-lg font-bold">{totalScored}</p>
+            <p className="text-lg font-bold">{predictions.length}</p>
           </div>
         </div>
       </div>
@@ -150,10 +151,10 @@ export default async function PriorityQueuePage() {
         </div>
       )}
 
-      {/* Scored orders with rank */}
+      {/* Scored unfulfilled orders with rank */}
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--muted)" }}>
-          Scored Orders — Ranked by Fraud Probability
+          Scored — Ranked by Fraud Probability
         </h2>
         <div className="card overflow-hidden">
           <table className="data-table">
@@ -165,12 +166,12 @@ export default async function PriorityQueuePage() {
                 <th className="text-left">Date</th>
                 <th className="text-right">Total</th>
                 <th className="text-right">Fraud Prob</th>
-                <th className="text-center">Status</th>
+                <th className="text-center">Predicted</th>
                 <th className="text-left">Model</th>
               </tr>
             </thead>
             <tbody>
-              {predictions?.map((p: any, index: number) => {
+              {predictions.map((p: any, index: number) => {
                 const prob = parseFloat(p.fraud_probability);
                 const order = p.orders;
                 const rank = index + 1;
@@ -214,10 +215,10 @@ export default async function PriorityQueuePage() {
                   </tr>
                 );
               })}
-              {(!predictions || predictions.length === 0) && (
+              {predictions.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center py-12" style={{ color: "var(--muted)" }}>
-                    No predictions yet. Run scoring to generate predictions.
+                    No scored unfulfilled orders yet.
                   </td>
                 </tr>
               )}
@@ -225,7 +226,7 @@ export default async function PriorityQueuePage() {
           </table>
         </div>
 
-        {predictions && predictions.length > 0 && (
+        {predictions.length > 0 && (
           <p className="text-xs mt-3" style={{ color: "var(--muted)" }}>
             Last scored: <LocalDate date={predictions[0].prediction_timestamp} showTime />
           </p>
