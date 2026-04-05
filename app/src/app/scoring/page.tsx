@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import RunScoringButton from "./RunScoringButton";
+import MetricsTable from "./MetricsTable";
 
 export default async function ScoringPage() {
   const supabase = await createClient();
@@ -70,32 +71,7 @@ export default async function ScoringPage() {
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Recent Training Runs</h2>
         {recentMetrics && recentMetrics.length > 0 ? (
-          <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100 dark:bg-gray-900">
-                <tr>
-                  <th className="text-left px-4 py-2">Model</th>
-                  <th className="text-left px-4 py-2">Trained</th>
-                  <th className="text-right px-4 py-2">F1</th>
-                  <th className="text-right px-4 py-2">PR-AUC</th>
-                  <th className="text-right px-4 py-2">ROC-AUC</th>
-                  <th className="text-right px-4 py-2">Train Rows</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentMetrics.map((m: any) => (
-                  <tr key={m.log_id} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="px-4 py-2">{m.model_name}</td>
-                    <td className="px-4 py-2 text-gray-500">{new Date(m.trained_at).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right font-mono">{parseFloat(m.f1).toFixed(4)}</td>
-                    <td className="px-4 py-2 text-right font-mono">{parseFloat(m.pr_auc).toFixed(4)}</td>
-                    <td className="px-4 py-2 text-right font-mono">{parseFloat(m.roc_auc).toFixed(4)}</td>
-                    <td className="px-4 py-2 text-right">{m.row_count_train}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MetricsTable metrics={recentMetrics} />
         ) : (
           <p className="text-gray-500">No training runs yet.</p>
         )}
