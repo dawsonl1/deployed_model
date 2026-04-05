@@ -7,10 +7,11 @@ import { LocalDate } from "@/components/LocalDate";
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string }>;
+  searchParams: Promise<{ success?: string; order_id?: string }>;
 }) {
   const params = await searchParams;
   const success = params.success === "1";
+  const newOrderId = params.order_id || "";
   const cookieStore = await cookies();
   const customerId = cookieStore.get("customer_id")?.value;
   if (!customerId) redirect("/select-customer");
@@ -30,7 +31,7 @@ export default async function OrdersPage({
           className="card p-3 mb-5 text-sm font-medium"
           style={{ background: "var(--success-soft)", color: "var(--success)", borderColor: "var(--success)" }}
         >
-          Order placed successfully.
+          Order placed successfully.{newOrderId && <> Order ID: <strong>#{newOrderId}</strong></>}
         </div>
       )}
       <div className="page-header">

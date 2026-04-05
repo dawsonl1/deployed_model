@@ -75,7 +75,7 @@ async function submitOrder(formData: FormData) {
     await supabase.from("order_items").insert(items);
   }
 
-  redirect("/orders?success=1");
+  redirect(`/orders?success=1&order_id=${order?.order_id ?? ""}`);
 }
 
 export default async function PlaceOrderPage() {

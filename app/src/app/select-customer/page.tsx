@@ -86,6 +86,13 @@ export default async function SelectCustomerPage({
                 </td>
               </tr>
             ))}
+            {(!customers || customers.length === 0) && (
+              <tr>
+                <td colSpan={5} className="text-center py-8" style={{ color: "var(--muted)" }}>
+                  {query ? `No customers found matching "${query}".` : "No customers found."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

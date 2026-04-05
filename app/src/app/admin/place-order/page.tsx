@@ -77,17 +77,18 @@ async function submitAdminOrder(formData: FormData) {
     await supabase.from("order_items").insert(items);
   }
 
-  redirect("/admin/place-order?success=1");
+  redirect(`/admin/place-order?success=1&order_id=${order?.order_id ?? ""}`);
 }
 
 export default async function AdminPlaceOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; success?: string }>;
+  searchParams: Promise<{ q?: string; success?: string; order_id?: string }>;
 }) {
   const params = await searchParams;
   const query = params.q || "";
   const success = params.success === "1";
+  const newOrderId = params.order_id || "";
 
   const supabase = await createClient();
 
@@ -133,7 +134,7 @@ export default async function AdminPlaceOrderPage({
           className="card p-3 mb-5 text-sm font-medium"
           style={{ background: "var(--success-soft)", color: "var(--success)", borderColor: "var(--success)" }}
         >
-          Order placed successfully.
+          Order placed successfully.{newOrderId && <> Order ID: <strong>#{newOrderId}</strong></>}
         </div>
       )}
 
