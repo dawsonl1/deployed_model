@@ -58,7 +58,7 @@ export default async function ReviewPage({
   });
 
   const reviewedCorrect = reviewedPool.filter(
-    (p: any) => p.predicted_fraud === p.orders.is_fraud
+    (p: any) => Boolean(p.predicted_fraud) === Boolean(p.orders.is_fraud)
   ).length;
 
   // Paginated query for the selected section
@@ -223,7 +223,7 @@ export default async function ReviewPage({
               <tbody>
                 {sectionData.map((p: any) => {
                   const order = p.orders;
-                  const match = order.is_fraud === p.predicted_fraud;
+                  const match = Boolean(order.is_fraud) === Boolean(p.predicted_fraud);
                   const prob = parseFloat(p.fraud_probability);
                   return (
                     <tr key={p.order_id}>

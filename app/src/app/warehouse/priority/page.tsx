@@ -69,7 +69,7 @@ export default async function PriorityQueuePage() {
   }).length;
 
   // Training pool accuracy
-  const correct = alreadyReviewed.filter((p: any) => p.orders.is_fraud_known && (p.orders.fulfilled) && (p.predicted_fraud === p.orders.is_fraud)).length;
+  const correct = alreadyReviewed.filter((p: any) => p.orders.is_fraud_known && (p.orders.fulfilled) && (Boolean(p.predicted_fraud) === Boolean(p.orders.is_fraud))).length;
   const reviewedTotal = alreadyReviewed.length;
 
   return (
@@ -265,7 +265,7 @@ export default async function PriorityQueuePage() {
               <tbody>
                 {alreadyReviewed.slice(0, 20).map((p: any) => {
                   const order = p.orders;
-                  const match = order.is_fraud === p.predicted_fraud;
+                  const match = Boolean(order.is_fraud) === Boolean(p.predicted_fraud);
                   return (
                     <tr key={p.order_id}>
                       <td className="font-medium">#{p.order_id}</td>
