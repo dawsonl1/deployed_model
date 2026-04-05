@@ -22,8 +22,47 @@ export default async function ReviewPage({
 
   const lastTrainedAt = latestTraining?.[0]?.trained_at ?? null;
 
-  // Get all reviewed orders with predictions
-  const { data: reviewed, count: totalCount } = await supabase
+  // Get ONLY fulfilled + labeled orders that have predictions (the actual training pool)
+  // We need two queries: one for counts (all), one for the current page
+  const { data: allPoolOrders } = await supabase
+    .from("order_predictions_fraud")
+    .select(`
+      order_id,
+      fraud_probability,
+      predicted_fraud,
+      prediction_timestamp,
+      orders!inner (
+        is_fraud,
+        is_fraud_known,
+        fulfilled
+      )
+    `)
+    .order("prediction_timestamp", { ascending: false });
+
+  // Filter to only training pool (fulfilled + labeled)
+  const allPool = allPoolOrders?.filter(
+    (p: any) => p.orders.fulfilled && p.orders.is_fraud_known
+  ) ?? [];
+
+  // Compute global stats from the full pool
+  const totalPoolCount = allPool.length;
+
+  const allPending = allPool.filter((p: any) => {
+    if (!lastTrainedAt) return true;
+    return new Date(p.prediction_timestamp) > new Date(lastTrainedAt);
+  });
+
+  const allTrained = allPool.filter((p: any) => {
+    if (!lastTrainedAt) return false;
+    return new Date(p.prediction_timestamp) <= new Date(lastTrainedAt);
+  });
+
+  const allCorrect = allPool.filter(
+    (p: any) => p.predicted_fraud === p.orders.is_fraud
+  ).length;
+
+  // Now get the paginated page with full details
+  const { data: pageOrders } = await supabase
     .from("order_predictions_fraud")
     .select(`
       order_id,
@@ -42,32 +81,27 @@ export default async function ReviewPage({
         customer_id,
         customers!inner ( full_name )
       )
-    `, { count: "exact" })
-    .order("prediction_timestamp", { ascending: false })
-    .range(offset, offset + perPage - 1);
+    `)
+    .order("prediction_timestamp", { ascending: false });
 
-  const trainingPool = reviewed?.filter(
+  // Filter page data to training pool only, then paginate
+  const fullPool = pageOrders?.filter(
     (p: any) => p.orders.fulfilled && p.orders.is_fraud_known
   ) ?? [];
 
-  // Split into pending inclusion vs already trained on
-  const pending = trainingPool.filter((p: any) => {
-    if (!lastTrainedAt) return true; // no training run yet = all pending
-    // Order was reviewed after the last training run
+  const totalPages = Math.ceil(fullPool.length / perPage);
+  const pageSlice = fullPool.slice(offset, offset + perPage);
+
+  // Split current page into pending vs trained
+  const pending = pageSlice.filter((p: any) => {
+    if (!lastTrainedAt) return true;
     return new Date(p.prediction_timestamp) > new Date(lastTrainedAt);
   });
 
-  const trained = trainingPool.filter((p: any) => {
+  const trained = pageSlice.filter((p: any) => {
     if (!lastTrainedAt) return false;
     return new Date(p.prediction_timestamp) <= new Date(lastTrainedAt);
   });
-
-  // Accuracy stats
-  const allCorrect = trainingPool.filter(
-    (p: any) => p.predicted_fraud === p.orders.is_fraud
-  ).length;
-  const totalPool = trainingPool.length;
-  const totalPages = Math.ceil((totalCount ?? 0) / perPage);
 
   function renderRow(p: any) {
     const order = p.orders;
@@ -141,35 +175,35 @@ export default async function ReviewPage({
         </p>
       </div>
 
-      {/* Stats */}
+      {/* Stats — computed from full pool, not just current page */}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="card p-3 flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{ background: "var(--warning)" }} />
           <div>
             <p className="metric-label">Pending Inclusion</p>
-            <p className="text-lg font-bold">{pending.length}</p>
+            <p className="text-lg font-bold">{allPending.length}</p>
           </div>
         </div>
         <div className="card p-3 flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{ background: "var(--success)" }} />
           <div>
             <p className="metric-label">Already Trained On</p>
-            <p className="text-lg font-bold">{trained.length}</p>
+            <p className="text-lg font-bold">{allTrained.length}</p>
           </div>
         </div>
         <div className="card p-3 flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} />
           <div>
             <p className="metric-label">Total in Pool</p>
-            <p className="text-lg font-bold">{totalCount ?? 0}</p>
+            <p className="text-lg font-bold">{totalPoolCount}</p>
           </div>
         </div>
-        {totalPool > 0 && (
+        {totalPoolCount > 0 && (
           <div className="card p-3 flex items-center gap-3">
             <div className="w-2 h-2 rounded-full" style={{ background: "var(--muted)" }} />
             <div>
               <p className="metric-label">Model Accuracy</p>
-              <p className="text-lg font-bold">{Math.round(allCorrect / totalPool * 100)}%</p>
+              <p className="text-lg font-bold">{Math.round(allCorrect / totalPoolCount * 100)}%</p>
             </div>
           </div>
         )}
@@ -185,7 +219,7 @@ export default async function ReviewPage({
       {pending.length > 0 && (
         <div className="mb-6">
           <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--warning)" }}>
-            Pending — Will be included in next retrain ({pending.length})
+            Pending — Will be included in next retrain
           </h2>
           <div className="card overflow-hidden" style={{ borderColor: "var(--warning)" }}>
             <table className="data-table">
@@ -201,7 +235,7 @@ export default async function ReviewPage({
       {/* Already trained on */}
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--success)" }}>
-          Already Trained On ({trained.length})
+          Already Trained On
         </h2>
         {trained.length > 0 ? (
           <div className="card overflow-hidden">
@@ -231,7 +265,7 @@ export default async function ReviewPage({
             Previous
           </a>
           <span className="text-xs" style={{ color: "var(--muted)" }}>
-            Page {page} of {totalPages}
+            Page {page} of {totalPages} ({totalPoolCount} orders)
           </span>
           <a
             href={page < totalPages ? `?page=${page + 1}` : undefined}
