@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import QuantityStepper from "@/components/QuantityStepper";
 
 async function submitOrder(formData: FormData) {
   "use server";
@@ -133,14 +134,7 @@ export default async function PlaceOrderPage() {
                         ${parseFloat(p.price).toFixed(2)}
                       </td>
                       <td className="text-right">
-                        <input
-                          type="number"
-                          name="quantity"
-                          defaultValue={0}
-                          min={0}
-                          max={99}
-                          className="input w-16 text-right"
-                        />
+                        <QuantityStepper name="quantity" />
                       </td>
                     </tr>
                   ))}

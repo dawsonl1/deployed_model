@@ -294,3 +294,71 @@ body {
   border-color: #047857;
   color: #fff;
 }
+
+/* Quantity stepper */
+.qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.qty-stepper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+.qty-stepper[data-active] {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.04);
+}
+.qty-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+  line-height: 1;
+}
+.qty-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+.qty-btn:active:not(:disabled) {
+  background: var(--border);
+}
+.qty-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.qty-btn-minus { border-right: 1px solid var(--border); }
+.qty-btn-plus { border-left: 1px solid var(--border); }
+.qty-stepper[data-active] .qty-btn-plus {
+  color: var(--accent);
+}
+.qty-input {
+  width: 2.25rem;
+  height: 1.75rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+  -moz-appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
