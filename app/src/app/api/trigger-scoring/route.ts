@@ -11,7 +11,7 @@ export async function POST() {
 
   try {
     const res = await fetch(
-      "https://api.github.com/repos/dawsonl1/deployed_model/actions/workflows/ml-pipeline.yml/dispatches",
+      "https://api.github.com/repos/dawsonl1/deployed_model/actions/workflows/inference.yml/dispatches",
       {
         method: "POST",
         headers: {
