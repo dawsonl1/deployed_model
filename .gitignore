@@ -20,6 +20,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# supabase
+supabase/.branches
+supabase/.temp
+
 # vercel
 .vercel
 
