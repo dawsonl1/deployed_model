@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("order_id, order_datetime, order_total, is_fraud")
+    .select("order_id, order_datetime, order_total, fulfilled")
     .eq("customer_id", parseInt(customerId))
     .order("order_datetime", { ascending: false });
 
@@ -72,6 +72,7 @@ export default async function DashboardPage() {
             <tr>
               <th className="text-left">Order</th>
               <th className="text-left">Date</th>
+              <th className="text-center">Status</th>
               <th className="text-right">Total</th>
             </tr>
           </thead>
@@ -84,11 +85,16 @@ export default async function DashboardPage() {
                   </Link>
                 </td>
                 <td style={{ color: "var(--muted)" }}><LocalDate date={o.order_datetime} /></td>
+                <td className="text-center">
+                  {o.fulfilled
+                    ? <span className="badge badge-success">Fulfilled</span>
+                    : <span className="badge badge-warning">Pending</span>}
+                </td>
                 <td className="text-right font-medium">${parseFloat(o.order_total).toFixed(2)}</td>
               </tr>
             ))}
             {recentOrders.length === 0 && (
-              <tr><td colSpan={3} className="text-center py-8" style={{ color: "var(--muted)" }}>No orders yet</td></tr>
+              <tr><td colSpan={4} className="text-center py-8" style={{ color: "var(--muted)" }}>No orders yet</td></tr>
             )}
           </tbody>
         </table>

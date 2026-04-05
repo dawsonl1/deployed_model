@@ -50,7 +50,15 @@ export default async function OrderDetailPage({
         <h1 className="page-title mt-1">Order #{id}</h1>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div className="card p-4">
+          <p className="metric-label">Status</p>
+          <p className="mt-1">
+            {order.fulfilled
+              ? <span className="badge badge-success">Fulfilled</span>
+              : <span className="badge badge-warning">Pending</span>}
+          </p>
+        </div>
         <div className="card p-4">
           <p className="metric-label">Date</p>
           <p className="text-sm font-semibold mt-1"><LocalDate date={order.order_datetime} /></p>
