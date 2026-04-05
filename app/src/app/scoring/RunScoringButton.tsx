@@ -29,7 +29,7 @@ export default function RunScoringButton() {
     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 max-w-lg space-y-3">
       <p className="text-sm text-gray-600 dark:text-gray-400">
         Manually trigger the pipeline to retrain models and score all orders.
-        This calls the Render deploy hook.
+        This triggers the GitHub Actions workflow.
       </p>
       <button
         onClick={triggerScoring}
