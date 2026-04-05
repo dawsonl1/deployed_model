@@ -12,9 +12,11 @@ const customerLinks = [
 
 const adminLinks = [
   { href: "/admin/place-order", label: "Place Order (Any)" },
+  { href: "/admin/orders", label: "All Orders" },
   { href: "/warehouse/priority", label: "Fraud Review Queue" },
   { href: "/admin/review", label: "Training Pool" },
   { href: "/scoring", label: "Models & Scoring" },
+  { href: "/admin/schema", label: "Database Schema" },
 ];
 
 export default function Sidebar({ customerName }: { customerName: string | null }) {
