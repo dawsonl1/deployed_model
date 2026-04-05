@@ -32,9 +32,12 @@ function groupByBatch(metrics: Metric[]): Map<string, Metric[]> {
   return groups;
 }
 
+const BATCHES_PER_PAGE = 3;
+
 export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("pr_auc");
   const [sortAsc, setSortAsc] = useState(false);
+  const [page, setPage] = useState(0);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -66,9 +69,12 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
     });
   }
 
+  const totalPages = Math.ceil(sortedBatchKeys.length / BATCHES_PER_PAGE);
+  const visibleKeys = sortedBatchKeys.slice(page * BATCHES_PER_PAGE, (page + 1) * BATCHES_PER_PAGE);
+
   return (
     <div className="space-y-4">
-      {sortedBatchKeys.map((batchKey) => {
+      {visibleKeys.map((batchKey) => {
         const batch = sortBatch(batches.get(batchKey)!);
         const batchDate = new Date(batchKey).toLocaleString();
 
@@ -125,6 +131,28 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
           </div>
         );
       })}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page === 0}
+            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded disabled:opacity-30"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-500">
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded disabled:opacity-30"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

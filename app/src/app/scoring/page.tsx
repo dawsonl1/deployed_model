@@ -17,7 +17,7 @@ export default async function ScoringPage() {
     .from("metrics_log")
     .select("*")
     .order("trained_at", { ascending: false })
-    .limit(20);
+    .limit(200);
 
   // Get prediction count
   const { count: predictionCount } = await supabase
