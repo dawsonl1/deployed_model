@@ -31,8 +31,9 @@ const navSections = [
     ],
   },
   {
-    label: "Pipeline",
+    label: "Admin",
     links: [
+      { href: "/admin/place-order", label: "Place Order (Any)" },
       { href: "/warehouse/priority", label: "Fraud Queue" },
       { href: "/scoring", label: "Models & Scoring" },
     ],
