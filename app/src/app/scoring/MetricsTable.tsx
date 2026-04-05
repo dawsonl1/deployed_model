@@ -48,10 +48,10 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
     }
   }
 
-  // Group by trained_at timestamp (all models in a batch share the same timestamp)
   const batches = groupByBatch(metrics);
-  // Sort batches newest first
   const sortedBatchKeys = [...batches.keys()].sort((a, b) => b.localeCompare(a));
+  const totalPages = Math.ceil(sortedBatchKeys.length / BATCHES_PER_PAGE);
+  const visibleKeys = sortedBatchKeys.slice(page * BATCHES_PER_PAGE, (page + 1) * BATCHES_PER_PAGE);
 
   function sortBatch(batch: Metric[]): Metric[] {
     return [...batch].sort((a, b) => {
@@ -69,9 +69,6 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
     });
   }
 
-  const totalPages = Math.ceil(sortedBatchKeys.length / BATCHES_PER_PAGE);
-  const visibleKeys = sortedBatchKeys.slice(page * BATCHES_PER_PAGE, (page + 1) * BATCHES_PER_PAGE);
-
   return (
     <div className="space-y-4">
       {visibleKeys.map((batchKey) => {
@@ -80,24 +77,25 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
 
         return (
           <div key={batchKey}>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Training Run: {batchDate}
+            <p className="text-xs font-medium mb-1.5" style={{ color: "var(--muted)" }}>
+              Run: {batchDate}
             </p>
-            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 dark:bg-gray-900">
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead>
                   <tr>
                     {columns.map((col) => (
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className={`px-4 py-2 cursor-pointer select-none hover:bg-gray-200 dark:hover:bg-gray-800 ${
+                        className={`cursor-pointer select-none ${
                           col.align === "right" ? "text-right" : "text-left"
                         }`}
+                        style={{ transition: "background 0.1s" }}
                       >
                         {col.label}
                         {sortKey === col.key && (
-                          <span className="ml-1">{sortAsc ? "▲" : "▼"}</span>
+                          <span className="ml-1 opacity-60">{sortAsc ? "▲" : "▼"}</span>
                         )}
                       </th>
                     ))}
@@ -107,22 +105,24 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
                   {batch.map((m, i) => (
                     <tr
                       key={m.log_id}
-                      className={`border-t border-gray-100 dark:border-gray-800 ${
-                        i === 0 ? "bg-green-50 dark:bg-green-950" : ""
-                      }`}
+                      style={i === 0 ? { background: "var(--success-soft)" } : undefined}
                     >
-                      <td className="px-4 py-2">
+                      <td className="font-medium">
                         {m.model_name}
                         {i === 0 && (
-                          <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">
-                            best
-                          </span>
+                          <span className="badge badge-success ml-2">best</span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right font-mono">{parseFloat(m.f1).toFixed(4)}</td>
-                      <td className="px-4 py-2 text-right font-mono">{parseFloat(m.pr_auc).toFixed(4)}</td>
-                      <td className="px-4 py-2 text-right font-mono">{parseFloat(m.roc_auc).toFixed(4)}</td>
-                      <td className="px-4 py-2 text-right">{m.row_count_train}</td>
+                      <td className="text-right" style={{ fontFamily: "var(--font-mono)" }}>
+                        {parseFloat(m.f1).toFixed(4)}
+                      </td>
+                      <td className="text-right" style={{ fontFamily: "var(--font-mono)" }}>
+                        {parseFloat(m.pr_auc).toFixed(4)}
+                      </td>
+                      <td className="text-right" style={{ fontFamily: "var(--font-mono)" }}>
+                        {parseFloat(m.roc_auc).toFixed(4)}
+                      </td>
+                      <td className="text-right">{m.row_count_train}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -133,21 +133,21 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
       })}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1">
           <button
             onClick={() => setPage(page - 1)}
             disabled={page === 0}
-            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded disabled:opacity-30"
+            className="btn btn-outline btn-sm"
           >
             Previous
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
             Page {page + 1} of {totalPages}
           </span>
           <button
             onClick={() => setPage(page + 1)}
             disabled={page >= totalPages - 1}
-            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded disabled:opacity-30"
+            className="btn btn-outline btn-sm"
           >
             Next
           </button>

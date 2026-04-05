@@ -27,57 +27,71 @@ export default async function DashboardPage() {
 
   const totalOrders = orders?.length ?? 0;
   const totalSpend = orders?.reduce((sum, o) => sum + parseFloat(o.order_total), 0) ?? 0;
+  const avgOrder = totalOrders > 0 ? totalSpend / totalOrders : 0;
   const recentOrders = orders?.slice(0, 5) ?? [];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Customer Dashboard</h1>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">{customer.full_name}</h1>
+        <p className="page-desc">{customer.email}</p>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-          <p className="text-sm text-gray-500">Customer</p>
-          <p className="font-semibold">{customer.full_name}</p>
-          <p className="text-sm text-gray-500">{customer.email}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="card p-4">
+          <p className="metric-label">Total Orders</p>
+          <p className="metric-value">{totalOrders}</p>
         </div>
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-          <p className="text-sm text-gray-500">Total Orders</p>
-          <p className="text-2xl font-bold">{totalOrders}</p>
+        <div className="card p-4">
+          <p className="metric-label">Total Spend</p>
+          <p className="metric-value">${totalSpend.toFixed(0)}</p>
         </div>
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-          <p className="text-sm text-gray-500">Total Spend</p>
-          <p className="text-2xl font-bold">${totalSpend.toFixed(2)}</p>
+        <div className="card p-4">
+          <p className="metric-label">Avg Order</p>
+          <p className="metric-value">${avgOrder.toFixed(0)}</p>
+        </div>
+        <div className="card p-4">
+          <p className="metric-label">Segment</p>
+          <p className="text-lg font-semibold mt-1">{customer.customer_segment ?? "—"}</p>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>{customer.loyalty_tier ?? "—"} tier</p>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Recent Orders</h2>
-        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100 dark:bg-gray-900">
-              <tr>
-                <th className="text-left px-4 py-2">Order ID</th>
-                <th className="text-left px-4 py-2">Date</th>
-                <th className="text-right px-4 py-2">Total</th>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+          Recent Orders
+        </h2>
+        <Link href="/orders" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
+          View all &rarr;
+        </Link>
+      </div>
+
+      <div className="card overflow-hidden">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="text-left">Order</th>
+              <th className="text-left">Date</th>
+              <th className="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentOrders.map((o) => (
+              <tr key={o.order_id}>
+                <td>
+                  <Link href={`/orders/${o.order_id}`} style={{ color: "var(--accent)" }} className="font-medium">
+                    #{o.order_id}
+                  </Link>
+                </td>
+                <td style={{ color: "var(--muted)" }}><LocalDate date={o.order_datetime} /></td>
+                <td className="text-right font-medium">${parseFloat(o.order_total).toFixed(2)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((o) => (
-                <tr key={o.order_id} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-4 py-2">
-                    <Link href={`/orders/${o.order_id}`} className="text-blue-600 hover:underline">
-                      #{o.order_id}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2"><LocalDate date={o.order_datetime} /></td>
-                  <td className="px-4 py-2 text-right">${parseFloat(o.order_total).toFixed(2)}</td>
-                </tr>
-              ))}
-              {recentOrders.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-4 text-center text-gray-500">No orders yet</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {recentOrders.length === 0 && (
+              <tr><td colSpan={3} className="text-center py-8" style={{ color: "var(--muted)" }}>No orders yet</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

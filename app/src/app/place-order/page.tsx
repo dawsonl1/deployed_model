@@ -10,7 +10,6 @@ async function submitOrder(formData: FormData) {
 
   const supabase = await createClient();
 
-  // Parse line items from form
   const productIds = formData.getAll("product_id") as string[];
   const quantities = formData.getAll("quantity") as string[];
 
@@ -90,52 +89,66 @@ export default async function PlaceOrderPage() {
     .order("category")
     .order("product_name");
 
+  // Group by category
+  const categories = new Map<string, typeof products>();
+  products?.forEach((p) => {
+    if (!categories.has(p.category)) categories.set(p.category, []);
+    categories.get(p.category)!.push(p);
+  });
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Place Order</h1>
-      <p className="text-gray-600 dark:text-gray-400">
-        Select products and quantities below. The order will be placed for the currently selected customer.
-      </p>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Place Order</h1>
+        <p className="page-desc">
+          Select products and quantities. Shipping ($9.99) and tax (8%) are added automatically.
+        </p>
+      </div>
 
       <form action={submitOrder}>
-        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-4">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100 dark:bg-gray-900">
-              <tr>
-                <th className="text-left px-4 py-2">Product</th>
-                <th className="text-left px-4 py-2">Category</th>
-                <th className="text-right px-4 py-2">Price</th>
-                <th className="text-right px-4 py-2 w-24">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products?.map((p) => (
-                <tr key={p.product_id} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-4 py-2">
-                    {p.product_name}
-                    <input type="hidden" name="product_id" value={p.product_id} />
-                  </td>
-                  <td className="px-4 py-2 text-gray-500">{p.category}</td>
-                  <td className="px-4 py-2 text-right">${parseFloat(p.price).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <input
-                      type="number"
-                      name="quantity"
-                      defaultValue={0}
-                      min={0}
-                      max={99}
-                      className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-right bg-white dark:bg-gray-900"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <button
-          type="submit"
-          className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
-        >
+        {[...categories.entries()].map(([category, items]) => (
+          <div key={category} className="mb-5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--muted)" }}>
+              {category}
+            </h2>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="text-left">Product</th>
+                    <th className="text-right">Price</th>
+                    <th className="text-right w-20">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items?.map((p) => (
+                    <tr key={p.product_id}>
+                      <td className="font-medium">
+                        {p.product_name}
+                        <input type="hidden" name="product_id" value={p.product_id} />
+                      </td>
+                      <td className="text-right" style={{ fontFamily: "var(--font-mono)" }}>
+                        ${parseFloat(p.price).toFixed(2)}
+                      </td>
+                      <td className="text-right">
+                        <input
+                          type="number"
+                          name="quantity"
+                          defaultValue={0}
+                          min={0}
+                          max={99}
+                          className="input w-16 text-right"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+        <button type="submit" className="btn btn-primary">
           Place Order
         </button>
       </form>

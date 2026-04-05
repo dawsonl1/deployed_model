@@ -26,20 +26,23 @@ export default function RunScoringButton() {
   }
 
   return (
-    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 max-w-lg space-y-3">
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Manually trigger the pipeline to retrain models and score all orders.
-        This triggers the GitHub Actions workflow.
+    <div className="card p-4">
+      <p className="metric-label">Manual Trigger</p>
+      <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
+        Retrain models and score all orders via GitHub Actions.
       </p>
       <button
         onClick={triggerScoring}
         disabled={status === "loading"}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="btn btn-primary w-full"
       >
-        {status === "loading" ? "Running..." : "Run Scoring Now"}
+        {status === "loading" ? "Triggering..." : "Run Scoring Now"}
       </button>
       {message && (
-        <p className={`text-sm ${status === "error" ? "text-red-600" : "text-green-600"}`}>
+        <p
+          className="text-xs mt-2"
+          style={{ color: status === "error" ? "var(--danger)" : "var(--success)" }}
+        >
           {message}
         </p>
       )}

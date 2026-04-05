@@ -6,75 +6,88 @@ import { LocalDate } from "@/components/LocalDate";
 export default async function ScoringPage() {
   const supabase = await createClient();
 
-  // Get current champion
   const { data: champion } = await supabase
     .from("model_registry")
     .select("*")
     .eq("is_champion", true)
     .single();
 
-  // Get recent metrics log
   const { data: recentMetrics } = await supabase
     .from("metrics_log")
     .select("*")
     .order("trained_at", { ascending: false })
     .limit(200);
 
-  // Get prediction count
   const { count: predictionCount } = await supabase
     .from("order_predictions_fraud")
     .select("*", { count: "exact", head: true });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Scoring & Pipeline Status</h1>
-      <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-        The ML pipeline runs nightly on Render. It trains all candidate models,
-        selects the best performer as champion, and scores all orders.
-      </p>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Models & Scoring</h1>
+        <p className="page-desc">
+          The pipeline trains 8 candidate models nightly, selects the best by PR-AUC,
+          and scores all orders. You can also trigger a run manually.
+        </p>
+      </div>
 
-      <RunScoringButton />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* Champion */}
+        <div className="card p-5 lg:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--success)" }}>
+            Current Champion
+          </p>
+          {champion ? (
+            <>
+              <p className="text-lg font-bold">{champion.model_name}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                v{champion.model_version} &middot; Trained <LocalDate date={champion.trained_at} showTime />
+              </p>
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div>
+                  <p className="metric-label">F1 Score</p>
+                  <p className="metric-value">{parseFloat(champion.f1).toFixed(4)}</p>
+                </div>
+                <div>
+                  <p className="metric-label">PR-AUC</p>
+                  <p className="metric-value">{parseFloat(champion.pr_auc).toFixed(4)}</p>
+                </div>
+                <div>
+                  <p className="metric-label">ROC-AUC</p>
+                  <p className="metric-value">{parseFloat(champion.roc_auc).toFixed(4)}</p>
+                </div>
+              </div>
+              {champion.notes && (
+                <p className="text-xs mt-3" style={{ color: "var(--muted)" }}>{champion.notes}</p>
+              )}
+            </>
+          ) : (
+            <p style={{ color: "var(--muted)" }}>No champion yet. Run the pipeline to train models.</p>
+          )}
+        </div>
 
-      {/* Champion Model */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Current Champion</h2>
-        {champion ? (
-          <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 max-w-lg">
-            <p className="font-semibold text-lg">{champion.model_name}</p>
-            <p className="text-sm text-gray-500">v{champion.model_version} &middot; Trained <LocalDate date={champion.trained_at} showTime /></p>
-            <div className="grid grid-cols-3 gap-3 mt-3">
-              <div>
-                <p className="text-xs text-gray-500">F1</p>
-                <p className="font-mono font-semibold">{parseFloat(champion.f1).toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">PR-AUC</p>
-                <p className="font-mono font-semibold">{parseFloat(champion.pr_auc).toFixed(4)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">ROC-AUC</p>
-                <p className="font-mono font-semibold">{parseFloat(champion.roc_auc).toFixed(4)}</p>
-              </div>
-            </div>
-            {champion.notes && <p className="text-xs text-gray-400 mt-2">{champion.notes}</p>}
+        {/* Actions */}
+        <div className="space-y-3">
+          <RunScoringButton />
+          <div className="card p-4">
+            <p className="metric-label">Orders Scored</p>
+            <p className="metric-value">{predictionCount ?? 0}</p>
           </div>
-        ) : (
-          <p className="text-gray-500">No champion model yet. Run the pipeline to train models.</p>
-        )}
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="text-sm text-gray-500">
-        Orders with predictions: {predictionCount ?? 0}
-      </div>
-
-      {/* Recent Training Runs */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Recent Training Runs</h2>
+      {/* Training History */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--muted)" }}>
+          Training History
+        </h2>
         {recentMetrics && recentMetrics.length > 0 ? (
           <MetricsTable metrics={recentMetrics} />
         ) : (
-          <p className="text-gray-500">No training runs yet.</p>
+          <div className="card p-8 text-center" style={{ color: "var(--muted)" }}>
+            No training runs yet.
+          </div>
         )}
       </div>
     </div>
