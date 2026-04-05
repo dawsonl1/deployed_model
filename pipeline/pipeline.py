@@ -2,10 +2,14 @@
 import sys
 import traceback
 from datetime import datetime, timezone
+from io import BytesIO
+
+import joblib
 
 from etl import run_etl
 from train import train_all
 from inference import run_inference
+from db import upload_model
 
 
 def main():
@@ -21,7 +25,14 @@ def main():
         best_model, best_name, best_metrics = train_all(df)
         print()
 
-        # Step 3: Inference — score only unfulfilled orders with champion
+        # Step 3: Save champion model to Supabase Storage
+        print("Saving champion model to Supabase Storage...")
+        buf = BytesIO()
+        joblib.dump(best_model, buf)
+        upload_model(buf.getvalue())
+        print()
+
+        # Step 4: Inference — score only unfulfilled orders with champion
         n_scored = run_inference(best_model, best_name, tables)
         print()
 

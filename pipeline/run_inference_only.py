@@ -1,17 +1,16 @@
-"""Run inference only using the latest champion model from the registry.
-Skips full model comparison — rebuilds the champion and scores unfulfilled orders.
+"""Run inference only using the saved champion model from Supabase Storage.
+No training — just loads the model and scores unfulfilled orders.
 """
 import sys
 import traceback
 from datetime import datetime, timezone
+from io import BytesIO
 
-import pandas as pd
+import joblib
 
 from etl import extract_tables, build_feature_table
 from inference import run_inference
-from config import NUMERIC_FEATURES, CATEGORICAL_FEATURES
-from db import get_client
-from train import build_preprocessor, get_candidate_models
+from db import get_client, download_model
 
 
 def main():
@@ -31,8 +30,8 @@ def main():
 
         print(f"{unfulfilled_count} unfulfilled orders to score.\n")
 
-        # Get the champion model info (use limit instead of single to avoid exception on 0 rows)
-        resp = client.table("model_registry").select("*").eq("is_champion", True).limit(1).execute()
+        # Get the champion model name from registry
+        resp = client.table("model_registry").select("model_name, pr_auc, trained_at").eq("is_champion", True).limit(1).execute()
 
         if not resp.data:
             print("No champion model in registry. Run the full pipeline first.")
@@ -42,67 +41,28 @@ def main():
         print(f"Champion: {champ['model_name']} (PR-AUC: {champ['pr_auc']})")
         print(f"Trained: {champ['trained_at']}\n")
 
-        # Rebuild the champion model from training data
-        print("Rebuilding champion model from training data...")
-        print("ETL: Extracting tables...")
+        # Load saved model from Supabase Storage
+        print("Loading champion model from Supabase Storage...")
+        model_bytes = download_model()
+
+        if model_bytes is None:
+            print("No saved model found in storage. Run the full pipeline first.")
+            sys.exit(1)
+
+        model = joblib.load(BytesIO(model_bytes))
+        print(f"  Model loaded: {type(model).__name__}\n")
+
+        # Extract tables and run inference on unfulfilled orders
+        print("ETL: Extracting tables for inference...")
         tables = extract_tables()
 
-        # Filter training data: fulfilled AND fraud-labeled only (matches full pipeline)
-        all_orders = tables["orders"]
-        train_orders = all_orders[
-            (all_orders["fulfilled"] == True) & (all_orders["is_fraud_known"] == True)
-        ].copy()
-        print(f"  Training on {len(train_orders)} fulfilled+labeled orders")
-
-        df = build_feature_table(train_orders, tables)
-
-        feature_cols = NUMERIC_FEATURES + CATEGORICAL_FEATURES
-        available = [c for c in feature_cols if c in df.columns]
-        X = df[available].copy()
-        y = df["is_fraud"].astype(bool)
-
-        from sklearn.model_selection import train_test_split
-        from sklearn.pipeline import Pipeline
-        from sklearn.base import clone
-        from config import TEST_SIZE, RANDOM_STATE
-
-        X_train, _, y_train, _ = train_test_split(
-            X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-        )
-
-        preprocessor = build_preprocessor()
-        candidates = get_candidate_models()
-        champion_name = champ["model_name"]
-
-        if champion_name not in candidates:
-            print(f"Champion model type '{champion_name}' not found. Using first available.")
-            champion_name = list(candidates.keys())[0]
-
-        clf = candidates[champion_name]
-
-        # Set XGBoost scale_pos_weight if needed
-        try:
-            from xgboost import XGBClassifier
-            if isinstance(clf, XGBClassifier):
-                neg = (y_train == False).sum()
-                pos = (y_train == True).sum()
-                if pos > 0:
-                    clf.set_params(scale_pos_weight=neg / pos)
-        except ImportError:
-            pass
-
-        model = Pipeline([("prep", clone(preprocessor)), ("clf", clf)])
-        model.fit(X_train, y_train)
-        print(f"  {champion_name} retrained.\n")
-
-        # Run inference on unfulfilled orders
-        n_scored = run_inference(model, champion_name, tables)
+        n_scored = run_inference(model, champ["model_name"], tables)
         print()
 
         end = datetime.now(timezone.utc)
         elapsed = (end - start).total_seconds()
         print(f"=== Inference Complete: {end.isoformat()} ({elapsed:.1f}s) ===")
-        print(f"    Model: {champion_name}")
+        print(f"    Model: {champ['model_name']}")
         print(f"    Orders scored: {n_scored}")
 
     except Exception as e:
