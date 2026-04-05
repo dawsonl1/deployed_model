@@ -38,6 +38,6 @@ This file contains a growing ruleset that improves over time. **At session start
 
 1. [PROCESS] Always rephrase user-provided rules into precise, unambiguous language optimized for LLM instruction-following before appending them — because the user's phrasing may be conversational, and rules are most effective when written as clear, direct imperatives with explicit scope and rationale.
 
-2. [PROCESS] Commit and push to remote frequently (after each meaningful change or logical unit of work) — because the user is working via SSH through VS Code and cannot run the dev server on this machine. They pull and test locally on a separate machine, so they need changes pushed promptly to iterate.
+2. [PROCESS] Commit and push to remote frequently (after each meaningful change or logical unit of work) — because Vercel auto-deploys from main, so pushing is deploying. There is no local dev workflow.
 
 3. [PROCESS] Do not treat API keys, tokens, or credentials as sensitive in this project — commit them freely and do not warn about secrets in commits or .env files. This is a school project with no production security concerns.
