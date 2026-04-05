@@ -94,11 +94,16 @@ def run_etl() -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
     print("ETL: Extracting tables from Supabase...")
     tables = extract_tables()
 
-    # Training data = fulfilled orders only (ground truth available)
+    # Training data = fulfilled AND fraud-labeled orders only
     all_orders = tables["orders"]
-    train_orders = all_orders[all_orders["fulfilled"] == True].copy()
-    print(f"  Fulfilled orders (training): {len(train_orders)}")
-    print(f"  Unfulfilled orders (inference): {len(all_orders) - len(train_orders)}")
+    train_orders = all_orders[
+        (all_orders["fulfilled"] == True) & (all_orders["is_fraud_known"] == True)
+    ].copy()
+    unlabeled = all_orders[(all_orders["fulfilled"] == True) & (all_orders["is_fraud_known"] == False)]
+    unfulfilled = all_orders[all_orders["fulfilled"] == False]
+    print(f"  Training pool (fulfilled + labeled): {len(train_orders)}")
+    print(f"  Fulfilled but unlabeled (excluded): {len(unlabeled)}")
+    print(f"  Unfulfilled (inference): {len(unfulfilled)}")
 
     print("ETL: Building training feature table...")
     df = build_feature_table(train_orders, tables)
