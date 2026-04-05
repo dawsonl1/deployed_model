@@ -1,19 +1,17 @@
 """Run inference only using the latest champion model from the registry.
-Skips training — just scores unfulfilled orders with the existing best model.
+Skips full model comparison — rebuilds the champion and scores unfulfilled orders.
 """
 import sys
 import traceback
 from datetime import datetime, timezone
 
-import joblib
 import pandas as pd
-from io import BytesIO
 
 from etl import extract_tables, build_feature_table
 from inference import run_inference
 from config import NUMERIC_FEATURES, CATEGORICAL_FEATURES
 from db import get_client
-from train import build_preprocessor, get_candidate_models, train_all
+from train import build_preprocessor, get_candidate_models
 
 
 def main():
@@ -33,26 +31,28 @@ def main():
 
         print(f"{unfulfilled_count} unfulfilled orders to score.\n")
 
-        # Get the champion model info
-        champion = client.table("model_registry").select("*").eq("is_champion", True).single().execute()
+        # Get the champion model info (use limit instead of single to avoid exception on 0 rows)
+        resp = client.table("model_registry").select("*").eq("is_champion", True).limit(1).execute()
 
-        if not champion.data:
+        if not resp.data:
             print("No champion model in registry. Run the full pipeline first.")
             sys.exit(1)
 
-        champ = champion.data
+        champ = resp.data[0]
         print(f"Champion: {champ['model_name']} (PR-AUC: {champ['pr_auc']})")
         print(f"Trained: {champ['trained_at']}\n")
 
-        # We need to retrain the champion model type quickly since we don't store model files
-        # (Supabase doesn't store binary artifacts — we retrain the specific champion algorithm)
+        # Rebuild the champion model from training data
         print("Rebuilding champion model from training data...")
         print("ETL: Extracting tables...")
         tables = extract_tables()
 
+        # Filter training data: fulfilled AND fraud-labeled only (matches full pipeline)
         all_orders = tables["orders"]
-        train_orders = all_orders[all_orders["fulfilled"] == True].copy()
-        print(f"  Training on {len(train_orders)} fulfilled orders")
+        train_orders = all_orders[
+            (all_orders["fulfilled"] == True) & (all_orders["is_fraud_known"] == True)
+        ].copy()
+        print(f"  Training on {len(train_orders)} fulfilled+labeled orders")
 
         df = build_feature_table(train_orders, tables)
 
@@ -63,6 +63,7 @@ def main():
 
         from sklearn.model_selection import train_test_split
         from sklearn.pipeline import Pipeline
+        from sklearn.base import clone
         from config import TEST_SIZE, RANDOM_STATE
 
         X_train, _, y_train, _ = train_test_split(
@@ -90,7 +91,7 @@ def main():
         except ImportError:
             pass
 
-        model = Pipeline([("prep", preprocessor), ("clf", clf)])
+        model = Pipeline([("prep", clone(preprocessor)), ("clf", clf)])
         model.fit(X_train, y_train)
         print(f"  {champion_name} retrained.\n")
 

@@ -73,11 +73,11 @@ export default function MetricsTable({ metrics }: { metrics: Metric[] }) {
     <div className="space-y-4">
       {visibleKeys.map((batchKey) => {
         const batch = sortBatch(batches.get(batchKey)!);
-        const batchDate = new Date(batchKey).toLocaleString();
+        const batchDate = new Date(batchKey).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
         return (
           <div key={batchKey}>
-            <p className="text-xs font-medium mb-1.5" style={{ color: "var(--muted)" }}>
+            <p className="text-xs font-medium mb-1.5" style={{ color: "var(--muted)" }} suppressHydrationWarning>
               Run: {batchDate}
             </p>
             <div className="card overflow-hidden">

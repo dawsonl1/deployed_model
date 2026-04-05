@@ -11,12 +11,6 @@ def get_client():
     return _client
 
 
-def fetch_dataframe(query_fn):
-    """Execute a supabase query and return the data as a list of dicts."""
-    result = query_fn
-    return result.data
-
-
 def upsert_rows(table: str, rows: list[dict]):
     """Upsert rows into a Supabase table."""
     client = get_client()

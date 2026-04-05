@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { LocalDate } from "@/components/LocalDate";
 
@@ -8,13 +9,21 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const cookieStore = await cookies();
+  const customerId = cookieStore.get("customer_id")?.value;
   const supabase = await createClient();
 
-  const { data: order } = await supabase
+  let query = supabase
     .from("orders")
     .select("*")
-    .eq("order_id", parseInt(id))
-    .single();
+    .eq("order_id", parseInt(id));
+
+  // If a customer is selected, scope to their orders only
+  if (customerId) {
+    query = query.eq("customer_id", parseInt(customerId));
+  }
+
+  const { data: order } = await query.single();
 
   if (!order) {
     return <p style={{ color: "var(--muted)" }}>Order not found.</p>;
@@ -26,10 +35,9 @@ export default async function OrderDetailPage({
     .eq("order_id", parseInt(id));
 
   const productIds = items?.map((i) => i.product_id) ?? [];
-  const { data: products } = await supabase
-    .from("products")
-    .select("product_id, product_name")
-    .in("product_id", productIds);
+  const products = productIds.length > 0
+    ? (await supabase.from("products").select("product_id, product_name").in("product_id", productIds)).data
+    : [];
 
   const productMap = new Map(products?.map((p) => [p.product_id, p.product_name]));
 

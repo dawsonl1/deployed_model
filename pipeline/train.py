@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -137,7 +138,7 @@ def train_all(df: pd.DataFrame) -> tuple[Pipeline, str, dict]:
     for name, clf in candidates.items():
         print(f"  Training {name}...")
         pipe = Pipeline([
-            ("prep", preprocessor),
+            ("prep", clone(preprocessor)),
             ("clf", clf),
         ])
         pipe.fit(X_train, y_train)
