@@ -53,9 +53,10 @@ def build_feature_table(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
                       on="customer_id", how="left")
     df = df.merge(item_rollup, on="order_id", how="left")
 
-    # --- Time-based features ---
-    df["order_datetime"] = pd.to_datetime(df["order_datetime"], errors="coerce")
-    now = pd.Timestamp.utcnow()
+    # --- Time-based features (strip tz to avoid naive/aware mismatch) ---
+    df["order_datetime"] = pd.to_datetime(df["order_datetime"], errors="coerce", utc=True).dt.tz_localize(None)
+    df["birthdate"] = pd.to_datetime(df["birthdate"], errors="coerce").dt.tz_localize(None)
+    df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True).dt.tz_localize(None)
     df["customer_age_days"] = (df["order_datetime"] - df["birthdate"]).dt.days
     df["customer_tenure_days"] = (df["order_datetime"] - df["created_at"]).dt.days
     df["order_hour"] = df["order_datetime"].dt.hour
