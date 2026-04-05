@@ -24,6 +24,9 @@ yarn-error.log*
 supabase/.branches
 supabase/.temp
 
+# local tooling
+.local/
+
 # vercel
 .vercel
 
