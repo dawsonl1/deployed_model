@@ -1,0 +1,14 @@
+services:
+  - type: cron
+    name: ml-pipeline-nightly
+    runtime: python
+    schedule: "0 2 * * *"  # 2:00 AM UTC every night
+    buildCommand: pip install -r pipeline/requirements.txt
+    startCommand: cd pipeline && python pipeline.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11"
