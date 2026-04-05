@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { LocalDate } from "@/components/LocalDate";
 
 export default async function OrderDetailPage({
   params,
@@ -43,7 +44,7 @@ export default async function OrderDetailPage({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800">
           <p className="text-xs text-gray-500">Date</p>
-          <p className="font-medium">{new Date(order.order_datetime).toLocaleDateString()}</p>
+          <p className="font-medium"><LocalDate date={order.order_datetime} /></p>
         </div>
         <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-800">
           <p className="text-xs text-gray-500">Payment</p>

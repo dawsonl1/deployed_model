@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import RunScoringButton from "./RunScoringButton";
 import MetricsTable from "./MetricsTable";
+import { LocalDate } from "@/components/LocalDate";
 
 export default async function ScoringPage() {
   const supabase = await createClient();
@@ -40,7 +41,7 @@ export default async function ScoringPage() {
         {champion ? (
           <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 max-w-lg">
             <p className="font-semibold text-lg">{champion.model_name}</p>
-            <p className="text-sm text-gray-500">v{champion.model_version} &middot; Trained {new Date(champion.trained_at).toLocaleString()}</p>
+            <p className="text-sm text-gray-500">v{champion.model_version} &middot; Trained <LocalDate date={champion.trained_at} showTime /></p>
             <div className="grid grid-cols-3 gap-3 mt-3">
               <div>
                 <p className="text-xs text-gray-500">F1</p>

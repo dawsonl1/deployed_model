@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { LocalDate } from "@/components/LocalDate";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
                       #{o.order_id}
                     </Link>
                   </td>
-                  <td className="px-4 py-2">{new Date(o.order_datetime).toLocaleDateString()}</td>
+                  <td className="px-4 py-2"><LocalDate date={o.order_datetime} /></td>
                   <td className="px-4 py-2 text-right">${parseFloat(o.order_total).toFixed(2)}</td>
                 </tr>
               ))}

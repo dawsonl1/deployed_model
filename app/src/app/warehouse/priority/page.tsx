@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { LocalDate } from "@/components/LocalDate";
 
 export default async function PriorityQueuePage() {
   const supabase = await createClient();
@@ -56,7 +57,7 @@ export default async function PriorityQueuePage() {
                 <tr key={p.order_id} className="border-t border-gray-100 dark:border-gray-800">
                   <td className="px-4 py-2 font-medium">#{p.order_id}</td>
                   <td className="px-4 py-2">{order?.customers?.full_name}</td>
-                  <td className="px-4 py-2">{order ? new Date(order.order_datetime).toLocaleDateString() : ""}</td>
+                  <td className="px-4 py-2">{order ? <LocalDate date={order.order_datetime} /> : ""}</td>
                   <td className="px-4 py-2 text-right">${order ? parseFloat(order.order_total).toFixed(2) : "—"}</td>
                   <td className="px-4 py-2 text-right">
                     <span className={prob > 0.5 ? "text-red-600 font-semibold" : prob > 0.3 ? "text-amber-600" : "text-green-600"}>
@@ -87,7 +88,7 @@ export default async function PriorityQueuePage() {
 
       {predictions && predictions.length > 0 && (
         <p className="text-xs text-gray-400">
-          Last scored: {new Date(predictions[0].prediction_timestamp).toLocaleString()}
+          Last scored: <LocalDate date={predictions[0].prediction_timestamp} showTime />
         </p>
       )}
     </div>

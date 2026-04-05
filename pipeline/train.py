@@ -56,10 +56,10 @@ def build_preprocessor():
 def get_candidate_models() -> dict[str, object]:
     """Return a dict of model_name -> estimator."""
     models = {
-        "LogisticRegression": LogisticRegression(max_iter=2000, random_state=RANDOM_STATE),
-        "DecisionTree_d3": DecisionTreeClassifier(max_depth=3, random_state=RANDOM_STATE),
+        "LogisticRegression": LogisticRegression(max_iter=2000, class_weight="balanced", random_state=RANDOM_STATE),
+        "DecisionTree_d3": DecisionTreeClassifier(max_depth=3, class_weight="balanced", random_state=RANDOM_STATE),
         "KNN_k15": KNeighborsClassifier(n_neighbors=15),
-        "RandomForest": RandomForestClassifier(n_estimators=300, n_jobs=-1, random_state=RANDOM_STATE),
+        "RandomForest": RandomForestClassifier(n_estimators=300, class_weight="balanced", n_jobs=-1, random_state=RANDOM_STATE),
         "GradientBoosting": GradientBoostingClassifier(
             n_estimators=300, learning_rate=0.05, max_depth=3, random_state=RANDOM_STATE
         ),
@@ -68,11 +68,12 @@ def get_candidate_models() -> dict[str, object]:
             n_estimators=200, learning_rate=0.5, random_state=RANDOM_STATE,
         ),
         "Bagging_d3": BaggingClassifier(
-            estimator=DecisionTreeClassifier(max_depth=3),
+            estimator=DecisionTreeClassifier(max_depth=3, class_weight="balanced"),
             n_estimators=200, n_jobs=-1, random_state=RANDOM_STATE,
         ),
     }
     if HAS_XGB:
+        # Compute scale_pos_weight for XGBoost (ratio of negative to positive)
         models["XGBoost"] = XGBClassifier(
             objective="binary:logistic", eval_metric="logloss",
             n_estimators=500, learning_rate=0.05, max_depth=3,
@@ -117,6 +118,13 @@ def train_all(df: pd.DataFrame) -> tuple[Pipeline, str, dict]:
 
     preprocessor = build_preprocessor()
     candidates = get_candidate_models()
+
+    # Set XGBoost scale_pos_weight based on actual class imbalance
+    if HAS_XGB and "XGBoost" in candidates:
+        neg = (y_train == False).sum()
+        pos = (y_train == True).sum()
+        if pos > 0:
+            candidates["XGBoost"].set_params(scale_pos_weight=neg / pos)
 
     results = []
     best_score = -1
