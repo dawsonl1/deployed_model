@@ -218,3 +218,68 @@ body {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
+
+/* Review action buttons */
+.review-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  border: 1.5px solid transparent;
+}
+.review-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.review-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Fraud button */
+.review-btn-fraud {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: transparent;
+}
+.review-btn-fraud:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+  transform: translateY(-1px);
+}
+.review-btn-fraud:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 rgba(220, 38, 38, 0);
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+/* Legit button */
+.review-btn-legit {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: transparent;
+}
+.review-btn-legit:hover:not(:disabled) {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+  transform: translateY(-1px);
+}
+.review-btn-legit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 rgba(5, 150, 105, 0);
+  background: #047857;
+  border-color: #047857;
+  color: #fff;
+}

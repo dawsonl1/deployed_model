@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LocalDate } from "@/components/LocalDate";
 import ScoringTrigger from "./ScoringTrigger";
 import { fulfillAndReport } from "./actions";
+import ReviewButtons from "./ReviewButtons";
 
 export default async function PriorityQueuePage() {
   const supabase = await createClient();
@@ -226,22 +227,7 @@ export default async function PriorityQueuePage() {
                       </span>
                     </td>
                     <td className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <form action={fulfillAndReport}>
-                          <input type="hidden" name="order_id" value={p.order_id} />
-                          <input type="hidden" name="is_fraud" value="true" />
-                          <button type="submit" className="btn btn-sm" style={{ background: "var(--danger-soft)", color: "var(--danger)", border: "1px solid var(--danger)" }}>
-                            Fraud
-                          </button>
-                        </form>
-                        <form action={fulfillAndReport}>
-                          <input type="hidden" name="order_id" value={p.order_id} />
-                          <input type="hidden" name="is_fraud" value="false" />
-                          <button type="submit" className="btn btn-sm" style={{ background: "var(--success-soft)", color: "var(--success)", border: "1px solid var(--success)" }}>
-                            Legit
-                          </button>
-                        </form>
-                      </div>
+                      <ReviewButtons orderId={p.order_id} onReport={fulfillAndReport} />
                     </td>
                   </tr>
                 );
